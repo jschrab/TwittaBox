@@ -8,7 +8,8 @@
 #include <SPI.h>
 #include <Ethernet.h>
 #include <WebServer.h>
-#include <StackList.h>
+#include <StackListPlus.h>
+#include <Bounce.h>
 #include <SoftwareSerial.h>
 
 // ----------------------------------------------------------------------------
@@ -34,10 +35,15 @@ static uint8_t mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
 static uint8_t ip[]  = { 10, 60, 70, 242 };
 
 // ----------------------------------------------------------------------------
-//<form action=\"go\" method=\"post\"><label for=\"em_msg\">Emergency Message</label><input type=\"text\" name=\"em_msg\" id=\"em_msg\" size=\"32\" value=\"\" /><input type=\"submit\" value=\"Send\" /></form>
-P(INDEX_PAGE) = "<!DOCTYPE html><meta charset=\"utf-8\"><title>TwittaBox 9001 - Version 0.9.1</title><style>body{margin: 50px 0px;font-family: Consolas, \"Andale Mono WT\", \"Andale Mono\", \"Lucida Console\", \"Lucida Sans Typewriter\", \"DejaVu Sans Mono\", \"Bitstream Vera Sans Mono\", \"Liberation Mono\", \"Nimbus Mono L\", Monaco, \"Courier New\", Courier, monospace;color:#fff;background: #333}#container{box-shadow: inset 0 0 20px rgba(0,0,0,.3), 4px 4px 12px rgba(0,0,0,.4);width: 460px;margin: 0px auto;text-align: left;padding: 15px 30px 30px;border: 4px solid #999;border-radius: 6px;background:#666}h1{margin:15px 0;color:#fff;text-shadow: -2px -2px 1px rgba(0,0,0,.5), 2px 2px 1px rgba(255,255,255,.2);}#main{margin: 0 0 0 20px}#msg{border:1px solid #999;font: bold 16px Consolas, \"Andale Mono WT\", \"Andale Mono\", \"Lucida Console\", \"Lucida Sans Typewriter\", \"DejaVu Sans Mono\", \"Bitstream Vera Sans Mono\", \"Liberation Mono\", \"Nimbus Mono L\", Monaco, \"Courier New\", Courier, monospace;width: 300px;color:#f00;background: #000;padding: 4px 8px;}#send{text-align:center;margin-top: 10px;}#send input{font: bold 16px/16px Consolas, \"Andale Mono WT\", \"Andale Mono\", \"Lucida Console\", \"Lucida Sans Typewriter\", \"DejaVu Sans Mono\", \"Bitstream Vera Sans Mono\", \"Liberation Mono\", \"Nimbus Mono L\", Monaco, \"Courier New\", Courier, monospace;color: #fff;background: #f00;border:1px solid #900;border-radius:60px;padding: 24px 14px;box-shadow: inset 1px 1px 2px rgba(255,255,255,.6), inset -1px -1px 2px rgba(0,0,0,.2);text-shadow: -1px -1px 1px rgba(0,0,0,.5), 1px 1px 1px rgba(255,255,255,.2);cursor:pointer;}#send input:hover{box-shadow: inset 1px 1px 2px rgba(255,255,255,.6), inset -1px -1px 2px rgba(0,0,0,.2), 0px 0px 14px #900;}</style><div id=\"container\"><h1>TwittaBox 9001</h1><div id=\"main\"><form action=\"go\" method=\"post\"><label for=\"msg\"> Message </label><input type=\"text\" name=\"msg\" id=\"msg\" maxlength=\"30\"><div id=\"send\"><input type=\"submit\" value=\"Send\"></div></form></div></div>";
-P(MAX_INDEX_PAGE) = "<!DOCTYPE html><head><title>TwittaBox 9001 - Version 0.9</title><link rel=\"shortcut icon\" href=\"/favicon.ico\"><style>body{margin: 50px 0px;padding: 0px;text-align: center;}#container{width: 480px;height: 160px;margin: 0px auto;text-align: left;padding: 15px;border: 15px solid #333;background-color: #eee;}h1{font-family: Impact;}</style></head><body><div id=\"container\"><header><h1>TwittaBox 9001</h1></header><div id=\"main\" role=\"main\">Maximum messages in queue currently.</div><footer></footer></div></body></html>";
 
+P(INDEX_PREFIX) = "<!DOCTYPE html><head>";
+P(INDEX_REDIRECT) = "<meta http-equiv=\"refresh\" content=\"2;url=index.html\" />";
+P(INDEX_PAGE_PT1) = "<meta charset=\"utf-8\" /><title>TwittaBox 9001 - Version 0.9.2</title><style type=\"text/css\"> body{margin: 50px 0px;font-family: Consolas, \"Andale Mono WT\", \"Andale Mono\", \"Lucida Console\", \"Lucida Sans Typewriter\", \"DejaVu Sans Mono\", \"Bitstream Vera Sans Mono\", \"Liberation Mono\", \"Nimbus Mono L\", Monaco, \"Courier New\", Courier, monospace;color:#fff;background: #333}#container{box-shadow: inset 0 0 20px rgba(0,0,0,.3), 4px 4px 12px rgba(0,0,0,.4);width: 620px;margin: 0px auto;text-align: left;padding: 15px 30px 30px;border: 4px solid #999;border-radius: 6px;background:#666}h1{margin:15px 0;color:#fff;text-shadow: -2px -2px 1px rgba(0,0,0,.5), 2px 2px 1px rgba(255,255,255,.2);}#main{margin: 0 0 0 20px}#msg{border:1px solid #999;font: bold 16px Consolas, \"Andale Mono WT\", \"Andale Mono\", \"Lucida Console\", \"Lucida Sans Typewriter\", \"DejaVu Sans Mono\", \"Bitstream Vera Sans Mono\", \"Liberation Mono\", \"Nimbus Mono L\", Monaco, \"Courier New\", Courier, monospace;width: 300px;color:#f00;background: #000;padding: 4px 8px;}#send{text-align:center;margin-top: 10px;}#send input{font: bold 16px/16px Consolas, \"Andale Mono WT\", \"Andale Mono\", \"Lucida Console\", \"Lucida Sans Typewriter\", \"DejaVu Sans Mono\", \"Bitstream Vera Sans Mono\", \"Liberation Mono\", \"Nimbus Mono L\", Monaco, \"Courier New\", Courier, monospace;color: #fff;background: #f00;border:1px solid #900;border-radius:60px;padding: 24px 14px;box-shadow: inset 1px 1px 2px rgba(255,255,255,.6), inset -1px -1px 2px rgba(0,0,0,.2);text-shadow: -1px -1px 1px rgba(0,0,0,.5), 1px 1px 1px rgba(255,255,255,.2);cursor:pointer;}#send input:hover{box-shadow: inset 1px 1px 2px rgba(255,255,255,.6), inset -1px -1px 2px rgba(0,0,0,.2), 0px 0px 14px #900;}#msg-area{text-align: center;padding-top: 12px;}</style></head><body><div id=\"container\"><h1>TwittaBox 9001</h1><div id=\"main\"><form action=\"go\" method=\"post\"><label for=\"msg\">Message </label><input type=\"text\" name=\"msg\" id=\"msg\" maxlength=\"30\" /><input type=\"checkbox\" name=\"is_imp\" id=\"is_imp\" />It's important!<div id=\"send\"><input type=\"submit\" value=\"Send\" /></div></form><div id=\"msg-area\">";
+P(INDEX_PAGE_MSG_1) = "30 character messages are anonymous";
+P(INDEX_PAGE_MSG_2a) = "Message Sent! ";
+P(INDEX_PAGE_MSG_2b) = " of 10 messages in the queue.";
+P(INDEX_PAGE_MSG_3) = "Message queue full! Try again later.";
+P(INDEX_PAGE_PT2) = "</div></div></div><script>document.getElementById('msg').focus();</script></body></html>";
 
 // ----------------------------------------------------------------------------
 // Set up software serial
@@ -55,17 +61,14 @@ const int  buttons[]          = { GREEN_BUTTON, RED_BUTTON };
 #define numButtons (sizeof(buttons)/sizeof(int)) //array size
 #define numLeds (sizeof(ledPins)/sizeof(int)) //array size
 
-const long debounceDelay      = 50;
+const long DEBOUNCE_DELAY = 5;
 
-long lastDebounceTime[] = { 0,      0     };
-int  lastButtonState[]  = { HIGH,   HIGH  };
-int  buttonState[]      = { HIGH,   HIGH  };
-int  buttonServiced[]   = { false,  false };
+Bounce bouncer[]        = { Bounce( GREEN_BUTTON, DEBOUNCE_DELAY ), Bounce( RED_BUTTON, DEBOUNCE_DELAY ) };
 
-int  ledBlinkState[]    = { BON,    BFAST };
-int  ledBlinkToggle[]   = { 0,      0     };
+int  ledBlinkState[]    = { BOFF,   BOFF };
+int  ledBlinkToggle[]   = { 0,      0    };
 
-StackList <String> msgStack[2];
+StackListPlus <String> msgStack[1];
     
 // ----------------------------------------------------------------------------
 
@@ -106,9 +109,15 @@ void indexCmd(WebServer &server, WebServer::ConnectionType type, char *url_tail,
         return;    
 
     if(msgStack[0].count() < 10) {
-        server.printP(INDEX_PAGE);
+        server.printP(INDEX_PREFIX);
+        server.printP(INDEX_PAGE_PT1);
+        server.printP(INDEX_PAGE_MSG_1);
+        server.printP(INDEX_PAGE_PT2);
     } else {
-        server.printP(MAX_INDEX_PAGE);
+        server.printP(INDEX_PREFIX);
+        server.printP(INDEX_PAGE_PT1);
+        server.printP(INDEX_PAGE_MSG_3);
+        server.printP(INDEX_PAGE_PT2);
     } // if..else
 } // function..indexCmd
 
@@ -118,43 +127,38 @@ void goCmd(WebServer &server, WebServer::ConnectionType type, char *url_tail, bo
     bool repeat;
     char name[NAMELEN], value[VALUELEN];
   
-    if (type == WebServer::HEAD) {
-        server.httpSuccess();
-        return;
-    } // if
-
     switch (type) {
+        case WebServer::HEAD:
+            server.httpSuccess();
+            return;
         case WebServer::POST:
             do {
                 repeat = server.readPOSTparam(name, NAMELEN, value, VALUELEN);
                 if (strcmp(name, "msg") == 0) {
-//                    clearLCD();
-  //                  LCD.print(value);
                     ledBlinkState[0] = BON;
                     digitalWrite(ledPins[0],HIGH);
-                    ledBlinkState[1] = BOFF; 
-                    digitalWrite(ledPins[1],LOW);
                     msgStack[0].push(value);
                     clearLCD();
                     selectLineOne();
                     LCD.print(msgStack[0].count());
                     LCD.print(" New Messages");
-//                    msgStr = value;
                 } // if
-                if (strcmp(name, "em_msg") == 0) {
-                    clearLCD();
-                    LCD.print(value);
-                    ledBlinkState[0] = BOFF; 
-                    digitalWrite(ledPins[0],LOW);
-                    ledBlinkState[1] = BFAST; 
+                if (strcmp(name, "is_imp") == 0) {
+                    ledBlinkState[1] = BON;
                     digitalWrite(ledPins[1],HIGH);
-//                    msgStr = value;
                 } // if
             } while (repeat);
+
+            server.printP(INDEX_PREFIX);
+            server.printP(INDEX_REDIRECT);
+            server.printP(INDEX_PAGE_PT1);
+            server.printP(INDEX_PAGE_MSG_2a);
+            server.print(msgStack[0].count());
+            server.printP(INDEX_PAGE_MSG_2b);
+            server.printP(INDEX_PAGE_PT2);
+
             break;
     } // switch..case
-
-    server.httpSeeOther("/index.html");
 } // function..indexCmd
 
 // ----------------------------------------------------------------------------
@@ -173,11 +177,6 @@ void setup() {
     selectLineOne();
     LCD.print("No New Messages");
 
-    //-- Init button states
-    for(int i=0;i<sizeof(buttons);i++) {
-        buttonState[i] = !digitalRead(buttons[i]);
-    } // for
-
     Ethernet.begin(mac, ip);
 
     webserver.setDefaultCommand(&indexCmd);
@@ -193,20 +192,9 @@ void setup() {
 void loop() {
     char buff[256];
     int len = 256;
-    int readButton;
     
     for(int i=0;i<numButtons;i++) {
-        //-------------------------------------------------------------------------
-        // Debounce the buttons - usuable states in 'buttonState' array
-        //-------------------------------------------------------------------------
-        readButton = digitalRead(buttons[i]);
-        if(readButton != lastButtonState[i]) {
-            lastDebounceTime[i] = millis();
-        } // if
-        if((millis() - lastDebounceTime[i]) > debounceDelay) {
-            buttonState[i] = readButton;
-        } // if
-        lastButtonState[i] = readButton;
+        bouncer[i].update();
 
         //-------------------------------------------------------------------------
         // Set blink states of lights
@@ -226,10 +214,13 @@ void loop() {
     //-------------------------------------------------------------------------
     //- Event: GREEN_BUTTON - advance to next message
     //-------------------------------------------------------------------------
-    if(buttonState[1]==LOW && buttonServiced[1]) {
+    if(bouncer[1].risingEdge()) {
         // Turn blink states off - if button pushed
         ledBlinkState[0] = BOFF;
         digitalWrite(ledPins[0],LOW);
+
+        ledBlinkState[1] = BOFF;
+        digitalWrite(ledPins[1],LOW);
  
         clearLCD();
         selectLineOne();
@@ -237,20 +228,33 @@ void loop() {
             LCD.print("No New Messages");
         } else {
             LCD.print(msgStack[0].count());
-            LCD.print(":"+msgStack[0].pop());
-        } // if..else 
-        buttonServiced[1] = false;
-    } // if
-    if(buttonState[1]!=LOW) {
-        buttonServiced[1] = true;
+            LCD.print(":"+msgStack[0].peek());
+            msgStack[0].tack(msgStack[0].pop());
+        } // if..else
     } // if
 
     //-------------------------------------------------------------------------
-    //- Event: RED_BUTTON - advance to next high priority message
+    //- Event: RED_BUTTON - delete message
     //-------------------------------------------------------------------------
-    if(buttonState[1]==LOW) {
-        ledBlinkState[1] = BOFF;
-        digitalWrite(ledPins[1],LOW);
+    if(bouncer[0].risingEdge()) {
+        if(msgStack[0].count()!=0) {
+            msgStack[0].pop();
+
+            clearLCD();
+            selectLineOne();
+            LCD.print("Message Deleted");
+
+            delay(750);
+
+            clearLCD();
+            selectLineOne();
+            if(msgStack[0].count()==0) {
+                LCD.print("No New Messages");
+            } else {
+                LCD.print(msgStack[0].count());
+                LCD.print(":"+msgStack[0].peek());
+            } // if..else
+        } // if
     } // if
     
     //-------------------------------------------------------------------------
