@@ -3,6 +3,7 @@
 // ----------------------------------------------------------------------------
 // 30-MAY-2011 - JDS - Incept date
 // 14-JUL-2012 - JDS - Wow. Actually DOES something now!
+// 03-SEP-2012 - JDS - Alpha status
 // ----------------------------------------------------------------------------
 
 #include <SPI.h>
@@ -261,7 +262,7 @@ void loop() {
 
     webserver.processConnection(buff, &len);
 
-    loopCounter++; //-- don't care about overflow - rap around is fine
+    loopCounter++; //-- don't care about overflow - wrap around is fine
 } // function..loop
 
 // ----------------------------------------------------------------------------
